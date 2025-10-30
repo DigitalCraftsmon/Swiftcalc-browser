@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwiftCalc Docs Generator — Proposal & Change Order</title>
+<meta name="color-scheme" content="light only">
+<style>
+  :root{
+    --bg:#f7f8fa;
+    --ink:#111418;
+    --muted:#5c6672;
+    --line:#E3E7EE;
+    --card:#ffffff;
+    --accent:#1640B9;
+    --accent-ink:#fff;
+    --radius:16px;
+    --font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:var(--font)}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 16px 80px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;box-shadow:0 6px 24px rgba(0,0,0,.05)}
+  h1,h2,h3{margin:0 0 8px 0}
+  h1{font-size:20px} h2{font-size:18px} h3{font-size:16px}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  input[type="text"], input[type="number"], textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;outline:none}
+  textarea{min-height:88px;resize:vertical}
+  select, button{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:700}
+  button.ghost{background:transparent}
+  .grid{display:grid;gap:12px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .left{display:flex;gap:12px;align-items:center}
+  .logo{width:120px;height:120px;border:1px dashed var(--line);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .logo img{max-width:100%;max-height:100%;display:block}
+  small.note{display:block;color:var(--muted);margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+  th.num, td.num{text-align:right}
+  th{background:#F4F6FB}
+  .totals{max-width:420px;margin-left:auto;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+  .totals .line{display:grid;grid-template-columns:1fr 180px;gap:10px;align-items:center}
+  .grand{font-weight:800}
+  .pill{padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#F4F6FB}
+  .fine{font-size:12px;color:var(--muted)}
+  .right{float:right}
+  .divider{height:1px;background:var(--line);margin:10px 0}
+  .sign{height:52px;border-bottom:1px solid var(--ink);}
+  .signline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .print-only{display:none}
+  @media print{
+    body{background:#fff}
+    .card{border:none;box-shadow:none;padding:0;margin:0}
+    .no-print{display:none !important}
+    .print-only{display:block}
+    .wrap{max-width:100%;padding:0}
+    .logo{border:none}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card no-print">
+      <div class="row">
+        <h1>SwiftCalc Docs Generator</h1>
+        <div class="toolbar">
+          <select id="mode">
+            <option value="proposal" selected>Proposal</option>
+            <option value="co">Change Order</option>
+          </select>
+          <button onclick="window.print()" class="ghost">Print / PDF</button>
+          <button onclick="saveHTML()" class="primary">Save As HTML</button>
+        </div>
+      </div>
+      <div class="grid cols-3" style="margin-top:10px">
+        <div>
+          <label class="fine">1) Load SwiftCalc Proposal JSON</label>
+          <input id="jsonFile" type="file" accept="application/json" />
+          <small class="note">Use "Export Proposal JSON" from SwiftCalc v6.</small>
+        </div>
+        <div>
+          <label class="fine">2) Or Paste JSON</label>
+          <textarea id="jsonPaste" placeholder='{"job": {...}, "totals": {...}}'></textarea>
+          <button onclick="tryPaste()" class="ghost">Load Pasted JSON</button>
+        </div>
+        <div>
+          <label class="fine">3) Company Logo (optional)</label>
+          <div class="row">
+            <div class="logo" id="logoBox"><span class="fine">No logo</span></div>
+            <div class="grid">
+              <input id="logoFile" type="file" accept="image/*">
+              <button onclick="clearLogo()" class="ghost">Remove Logo</button>
+            </div>
+          </div>
+          <small class="note">Logo is embedded in the saved HTML.</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="left">
+          <div class="logo"><img id="logoImg" alt="" /></div>
+          <div>
+            <h2 id="docTitle">Proposal</h2>
+            <div class="fine" id="docMeta">—</div>
+          </div>
+        </div>
+        <div>
+          <div class="pill"><span id="docDate">—</span></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="grid cols-2">
+        <div>
+          <strong>To:</strong>
+          <div id="clientBlock" class="fine">—</div>
+        </div>
+        <div>
+          <strong>Project:</strong>
+          <div id="projectBlock" class="fine">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="scopeCard" class="card">
+      <h3>Scope of Work</h3>
+      <div id="scopeText" class="fine">See line-item breakdown and notes below.</div>
+    </div>
+
+    <div id="linesCard" class="card">
+      <h3>Breakdown</h3>
+      <table id="linesTable">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th class="num">Qty / Hrs</th>
+            <th class="num">Rate / Unit</th>
+            <th class="num">Line Total</th>
+          </tr>
+        </thead>
+        <tbody id="linesBody">
+          <tr><td colspan="4" class="fine">No lines loaded yet.</td></tr>
+        </tbody>
+      </table>
+      <div class="totals" style="margin-top:10px">
+        <div class="line"><div>Materials</div><div id="tMat">$0.00</div></div>
+        <div class="line"><div>Labor</div><div id="tLab">$0.00</div></div>
+        <div class="line"><div>Equipment</div><div id="tEq">$0.00</div></div>
+        <div class="line"><div>Misc</div><div id="tMisc">$0.00</div></div>
+        <div class="line"><div>Subcontractors</div><div id="tSubs">$0.00</div></div>
+        <div class="divider"></div>
+        <div class="line"><div><strong>Grand Total</strong></div><div id="tGrand" class="grand">$0.00</div></div>
+      </div>
+    </div>
+
+    <div id="notesCard" class="card">
+      <div class="grid cols-2">
+        <div>
+          <h3>Inclusions</h3>
+          <textarea id="inclusions" placeholder="What’s included…"></textarea>
+        </div>
+        <div>
+          <h3>Exclusions</h3>
+          <textarea id="exclusions" placeholder="What’s excluded…"></textarea>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <h3>Notes</h3>
+        <textarea id="notes" placeholder="General notes…"></textarea>
+      </div>
+    </div>
+
+    <div id="coCard" class="card" style="display:none">
+      <h3>Change Order Details</h3>
+      <div class="grid cols-2">
+        <div>
+          <label class="fine">Original Contract Sum</label>
+          <input id="origSum" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div>
+          <label class="fine">Previous CO Net Change</label>
+          <input id="prevChange" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="grid cols-2" style="margin-top:8px">
+        <div>
+          <label class="fine">This Change (increase/decrease)</label>
+          <input id="thisChange" type="number" min="-9999999" step="0.01" placeholder="0.00">
+        </div>
+        <div>
+          <label class="fine">New Contract Sum</label>
+          <input id="newSum" type="text" readonly placeholder="$0.00">
+        </div>
+      </div>
+      <small class="note">Auto-calculates: New Sum = Original + Previous + This Change.</small>
+    </div>
+
+    <div class="card">
+      <div class="signline">
+        <div>
+          <div class="fine">Authorized Signature</div>
+          <div class="sign"></div>
+        </div>
+        <div>
+          <div class="fine">Date</div>
+          <div class="sign"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card no-print">
+      <div class="row">
+        <div class="fine">Document built by SwiftCalc Docs Generator</div>
+        <div class="toolbar">
+          <button onclick="window.scrollTo({top:0,behavior:'smooth'})" class="ghost">Back to Top</button>
+          <button onclick="window.print()" class="primary">Print / Save PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const fmt = n => (isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD'}) : '$0.00');
+  let logoData = '';
+
+  // Mode toggle
+  $('#mode').addEventListener('change', ()=>{
+    const mode = $('#mode').value;
+    $('#docTitle').textContent = (mode==='proposal' ? 'Proposal' : 'Change Order');
+    $('#coCard').style.display = (mode==='co') ? '' : 'none';
+  });
+
+  // JSON file loader
+  $('#jsonFile').addEventListener('change', (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => { try{ loadPayload(JSON.parse(ev.target.result)); } catch{ alert('Invalid JSON'); } };
+    r.readAsText(f);
+  });
+
+  function tryPaste(){
+    const txt = $('#jsonPaste').value.trim();
+    if(!txt) return;
+    try{ loadPayload(JSON.parse(txt)); } catch{ alert('Invalid JSON'); }
+  }
+
+  // Logo loader
+  $('#logoFile').addEventListener('change', (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      logoData = ev.target.result;
+      $('#logoImg').src = logoData;
+      $('#logoBox').innerHTML = '';
+      $('#logoBox').appendChild($('#logoImg'));
+    };
+    r.readAsDataURL(f);
+  });
+  function clearLogo(){
+    logoData='';
+    $('#logoImg').removeAttribute('src');
+    $('#logoBox').innerHTML = '<span class="fine">No logo</span>';
+  }
+
+  // Core payload loader
+  function loadPayload(p){
+    try{
+      const job = p.job || {};
+      const totals = p.totals || {};
+      const lines = p.lines || {};
+      const settings = p.settings || {};
+
+      // Header
+      $('#docMeta').textContent = `${job.client||''} • ${job.name||''}`.replace(/^ • /,'');
+      $('#docDate').textContent = job.date || new Date().toLocaleDateString();
+      $('#clientBlock').textContent = job.client || '—';
+      $('#projectBlock').textContent = (job.name || '') + (job.address? '\\n' + job.address : '');
+
+      // Notes area
+      $('#notes').value = job.notes || '';
+
+      // Lines
+      const body = $('#linesBody');
+      body.innerHTML = '';
+      const pushLine = (desc, qty, rate, total) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHTML(desc||'')}</td>
+                        <td class="num">${qty ?? ''}</td>
+                        <td class="num">${rate ?? ''}</td>
+                        <td class="num">${fmt(total||0)}</td>`;
+        body.appendChild(tr);
+      };
+
+      // Materials
+      (lines.materials||[]).forEach(r=>{
+        const qty = +r.qty||0;
+        const rate = +r.unitCost||0;
+        pushLine(r.desc, qty, fmt(rate), qty*rate);
+      });
+      // Labor
+      (lines.labor||[]).forEach(r=>{
+        const hrs = +r.hours||0;
+        const rate = +r.rate||0;
+        pushLine(r.desc, hrs, fmt(rate), hrs*rate);
+      });
+      // Equip
+      (lines.equip||[]).forEach(r=>{
+        const qty = +r.qty||0;
+        const rate = +r.rate||0;
+        pushLine(r.desc, qty, fmt(rate), qty*rate);
+      });
+      // Misc
+      (lines.misc||[]).forEach(r=>{
+        const qty = +r.qty||0;
+        const rate = +r.unitCost||0;
+        pushLine(r.desc, qty, fmt(rate), qty*rate);
+      });
+      // Subs
+      (lines.subs||[]).forEach(r=>{
+        const q = +r.quote||0;
+        pushLine(r.desc, '', 'Quote', q);
+      });
+
+      // Totals
+      $('#tMat').textContent = fmt(totals.matSub||0);
+      $('#tLab').textContent = fmt(totals.laborSub||0);
+      $('#tEq').textContent = fmt(totals.equipSub||0);
+      $('#tMisc').textContent = fmt(totals.miscSub||0);
+      $('#tSubs').textContent = fmt(totals.subsSub||0);
+      $('#tGrand').textContent = fmt(totals.grand||0);
+
+      window.__SC_PAYLOAD__ = p;
+      alert('Proposal JSON loaded.');
+    }catch(e){
+      alert('Could not parse expected fields in payload.');
+    }
+  }
+
+  function escapeHTML(s){ return (s||'').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  // Change Order math
+  ['origSum','prevChange','thisChange'].forEach(id=>{
+    $('#'+id).addEventListener('input', updateCO);
+  });
+  function updateCO(){
+    const o = +($('#origSum').value||0);
+    const p = +($('#prevChange').value||0);
+    const t = +($('#thisChange').value||0);
+    const n = o + p + t;
+    $('#newSum').value = fmt(n);
+  }
+
+  // Save-as self-contained HTML (embeds payload + logo)
+  function saveHTML(){
+    const mode = $('#mode').value;
+    const state = {
+      mode,
+      payload: window.__SC_PAYLOAD__ || null,
+      inclusions: $('#inclusions').value || '',
+      exclusions: $('#exclusions').value || '',
+      notes: $('#notes').value || '',
+      co: {
+        origSum: $('#origSum').value || '',
+        prevChange: $('#prevChange').value || '',
+        thisChange: $('#thisChange').value || ''
+      },
+      logo: logoData || ''
+    };
+    const inj = `<script>window.__DOC_STATE__=${JSON.stringify(state)};<\/script>`;
+    let html = document.documentElement.outerHTML.replace('</body>', inj + '\n</body>');
+    const blob = new Blob([html], {type:'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const title = (state.payload && state.payload.job && state.payload.job.name) ? state.payload.job.name.replace(/[^\w\-]+/g,'_') : 'SwiftCalc_Doc';
+    a.download = title + '_' + mode + '.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Rehydrate if opened from saved HTML
+  (function restore(){
+    const s = window.__DOC_STATE__;
+    if(!s) return;
+    $('#mode').value = s.mode || 'proposal';
+    $('#mode').dispatchEvent(new Event('change'));
+    $('#inclusions').value = s.inclusions || '';
+    $('#exclusions').value = s.exclusions || '';
+    $('#notes').value = s.notes || '';
+    if(s.logo){
+      logoData = s.logo;
+      $('#logoImg').src = s.logo;
+      $('#logoBox').innerHTML = '';
+      $('#logoBox').appendChild($('#logoImg'));
+    }
+    if(s.payload){ loadPayload(s.payload); }
+    if(s.co){
+      $('#origSum').value = s.co.origSum || '';
+      $('#prevChange').value = s.co.prevChange || '';
+      $('#thisChange').value = s.co.thisChange || '';
+      updateCO();
+    }
+  })();
+</script>
+</body>
+</html>
