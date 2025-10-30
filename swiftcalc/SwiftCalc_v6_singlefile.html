@@ -1,1 +1,904 @@
-<!doctype html><title>SwiftCalc v6</title><p>If you see this placeholder, ask me to regenerate v6.</p>
+<!DOCTYPE html>
+<html lang="en" data-theme="blueprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SwiftCalc — Blueprint Edition (v6)</title>
+<meta name="theme-color" content="#143a74">
+<style>
+  :root{
+    --radius:16px;
+    --gap:12px;
+    --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.22);
+    --font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;
+  }
+  /* Lighter Blueprint */
+  :root[data-theme="blueprint"]{
+    --bg:#143a74; /* lighter blueprint */
+    --bg-grad:linear-gradient(180deg,#143a74,#0f2f63);
+    --card:#1a4686;
+    --ink:#ffffff;
+    --muted:#d2dcff;
+    --accent:#86d8ff;
+    --ok:#b8ffb0;
+    --warn:#f7e27a; /* vellum yellow */
+    --danger:#ff9b9b;
+    --line:#2a57a2;
+    --hdr:#ffffff;
+    --hdr-bg:rgba(247,226,122,0.16);
+    --chip:#163f80;
+    --input:#12366f;
+  }
+  /* Dark */
+  :root[data-theme="dark"]{
+    --bg:#0f1115;
+    --bg-grad:linear-gradient(180deg,#0f1115,#0c0e12);
+    --card:#151821;
+    --ink:#e8ecf1;
+    --muted:#9aa4b2;
+    --accent:#7cc0ff;
+    --ok:#6ee7b7;
+    --warn:#facc15;
+    --danger:#f87171;
+    --line:#222737;
+    --hdr:#e8ecf1;
+    --hdr-bg:rgba(250,204,21,0.08);
+    --chip:#10131b;
+    --input:#0c0f14;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);background-image:var(--bg-grad);color:var(--ink);font:var(--font)}
+
+  header{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:linear-gradient(180deg,rgba(0,0,0,.20),rgba(0,0,0,.05));backdrop-filter:blur(6px);z-index:10}
+  header h1{font-size:18px;margin:0;font-weight:800;letter-spacing:.2px}
+  .badge{padding:3px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--chip)}
+
+  .wrap{max-width:1240px;margin:22px auto;padding:0 18px 120px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+
+  .grid{display:grid;gap:var(--gap)}
+  .grid.cols-3{grid-template-columns:1.2fr 1fr 1fr}
+  .grid.cols-4{grid-template-columns:repeat(4,1fr)}
+  .grid.cols-2{grid-template-columns:1fr 1fr}
+  .grid.cols-6{grid-template-columns:repeat(6,1fr)}
+
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+  input[type="text"], input[type="number"], input[type="date"], select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--input);color:var(--ink);outline:none}
+  input[type="number"]{text-align:right}
+  .check{display:flex;align-items:center;gap:8px;color:var(--hdr);font-size:12px}
+  .check input{transform:scale(1.1)}
+
+  .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+  button{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--input);color:var(--ink);cursor:pointer}
+  button:hover{border-color:#2b3240}
+  button.primary{background:var(--accent);color:#0b1020;border-color:transparent;font-weight:700}
+  button.ghost{background:transparent}
+
+  table{width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden}
+  th, td{border-bottom:1px dashed rgba(10,20,40,.35);padding:10px 8px;text-align:left}
+  th{font-size:12px;color:var(--hdr);font-weight:800;background:var(--hdr-bg)}
+  td.num, th.num{text-align:right}
+  td:last-child, th:last-child{text-align:right}
+
+  .totals{display:grid;gap:8px}
+  .totals .line{display:grid;grid-template-columns:1fr 200px;gap:8px;align-items:center}
+  .totals .value{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--input);text-align:right}
+  .grand{font-size:20px;font-weight:900;color:var(--ok)}
+  .muted{color:var(--muted)}
+  .nowrap{white-space:nowrap}
+  .print-note{font-size:12px;color:var(--muted)}
+  .tag{padding:4px 8px;border:1px solid var(--line);border-radius:999px;background:var(--chip);font-size:12px;color:var(--hdr)}
+
+  .toggle{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip)}
+  .toggle input{display:none}
+  .toggle .knob{width:38px;height:22px;border-radius:999px;background:var(--input);border:1px solid var(--line);position:relative}
+  .toggle .knob::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--accent);transition:transform .2s ease}
+  .toggle input:checked + .knob::after{transform:translateX(16px)}
+  .toggle .label{font-size:12px;color:var(--hdr)}
+
+  footer{position:fixed;bottom:12px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+  footer .footer-card{pointer-events:auto;background:var(--card);border:1px solid var(--line);padding:8px 10px;border-radius:12px;display:flex;gap:8px;align-items:center}
+
+  @media print{
+    header, footer, .toolbar, .badge, .toggle, .noprint{display:none !important}
+    body{background:#fff;color:#000}
+    .card{box-shadow:none;border:1px solid #ddd;background:#fff}
+    input, .value{border:1px solid #ccc;background:#fff;color:#000}
+    th{background:#f7f7f7;color:#000;border-bottom:1px solid #ddd}
+    td, th{border-bottom:1px solid #e5e5e5}
+    .grand{color:#000}
+  }
+</style>
+<!-- Single-file build: PWA disabled -->
+</head>
+<body>
+  <header>
+    <div class="row">
+      <h1>SwiftCalc</h1>
+      <span class="badge">Blueprint Edition</span>
+    </div>
+    <div class="toolbar">
+      <label class="toggle" title="Toggle Blueprint / Dark">
+        <input id="themeToggle" type="checkbox" aria-label="Toggle theme">
+        <span class="knob" aria-hidden="true"></span>
+        <span class="label">Blueprint</span>
+      </label>
+      <button onclick="newDoc()" title="Clear all fields">New</button>
+      <button onclick="saveJSON()" title="Download a .json snapshot">Export</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importJSON(event)">
+      <button onclick="document.getElementById('importFile').click()" title="Load a .json snapshot">Import</button>
+      <button onclick="window.print()" class="ghost">Print</button>
+      <button onclick="openProposal()" class="ghost" title="Preview a printable proposal summary">Proposal Preview</button>
+      <button onclick="exportProposalJSON()" class="ghost noprint" title="Download Proposal JSON">Export Proposal JSON</button>
+      <button onclick="copyProposalJSON()" class="ghost noprint" title="Copy Proposal JSON to clipboard">Copy JSON</button>
+      <button onclick="duplicateDoc()" class="primary" title="Download this as a copy of the HTML file">Save As HTML</button>
+      <button id="installBtn" style="display:none" class="ghost" title="Install as app" style="display:none">Install App</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Job Info -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Job Info</strong>
+        <span class="tag" id="jobInfoTag">Ready</span>
+      </div>
+      <div class="grid cols-6">
+        <div><label>Job / Project</label><input id="job" type="text" placeholder="e.g., Valencia Theater — Bathroom Murals"></div>
+        <div><label>Client</label><input id="client" type="text" placeholder="e.g., ACME Construction"></div>
+        <div><label>Date</label><input id="date" type="date"></div>
+        <div><label>Address</label><input id="address" type="text" placeholder="Street, City, ST"></div>
+        <div><label>Wage Rate ($/hr)</label><input id="wageRate" type="number" min="0" step="0.01" value="48" oninput="calc()"></div>
+        <div><label>Recycle Fee (%)</label><input id="recyclePct" type="number" min="0" step="0.01" value="0" oninput="calc()"></div>
+      </div>
+      <div class="grid cols-6" style="margin-top:8px">
+        <div><label>Sales Tax % (materials)</label><input id="salesTax" type="number" min="0" step="0.01" value="0" oninput="calc()"></div>
+        <div><label>Material Markup %</label><input id="matMarkup" type="number" min="0" step="0.01" value="0" oninput="calc()"></div>
+        <div><label>Labor Markup %</label><input id="laborMarkup" type="number" min="0" step="0.01" value="0" oninput="calc()"></div>
+        <div><label>Subs Markup %</label><input id="subsMarkup" type="number" min="0" step="0.01" value="0" oninput="calc()"></div>
+        <div><label>Total Markup %</label><input id="profitPct" type="number" min="0" step="0.01" value="42" oninput="calc()"></div>
+        <div><label>Company O/H Floor %</label><input id="companyPct" type="number" min="0" step="0.01" value="32" oninput="calc()"></div>
+      </div>
+      <div class="grid cols-6" style="margin-top:8px">
+        <div><label>Notes (internal)</label><input id="notes" type="text" placeholder="Brief scope notes for printout"></div>
+        <div class="check" style="align-self:end"><input id="shippingTaxable" type="checkbox" checked onchange="calc()"><label for="shippingTaxable" style="margin:0">Shipping is Taxable</label></div>
+        <div><label>Shipping / Delivery ($)</label><input id="shippingAmt" type="number" min="0" step="0.01" value="0" oninput="calc()"></div>
+      </div>
+    </div>
+
+    <!-- Materials -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Materials</strong>
+        <div class="toolbar">
+          <select id="cat_materials" onchange="calc()">
+            <option>Interior</option><option>Exterior</option><option selected>Other</option>
+          </select>
+          <button onclick="addRow('materials')">+ Add Line</button>
+          <button onclick="clearRows('materials')" class="ghost">Clear</button>
+        </div>
+      </div>
+      <table id="materialsTable" aria-label="Materials table">
+        <thead>
+          <tr>
+            <th style="width:36%">Description</th>
+            <th class="num" style="width:10%">Qty</th>
+            <th style="width:10%">Unit</th>
+            <th class="num" style="width:12%">Unit Cost</th>
+            <th class="num" style="width:14%">Line Total</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Labor -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Labor</strong>
+        <div class="toolbar">
+          <select id="cat_labor" onchange="calc()">
+            <option>Interior</option><option>Exterior</option><option selected>Other</option>
+          </select>
+          <button onclick="addRow('labor')">+ Add Line</button>
+          <button onclick="clearRows('labor')" class="ghost">Clear</button>
+        </div>
+      </div>
+      <table id="laborTable" aria-label="Labor table">
+        <thead>
+          <tr>
+            <th style="width:48%">Description</th>
+            <th class="num" style="width:12%">Hours</th>
+            <th class="num" style="width:15%">Rate</th>
+            <th class="num" style="width:15%">Line Total</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Equipment -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Equipment Rental</strong>
+        <div class="toolbar">
+          <select id="cat_equip" onchange="calc()">
+            <option>Interior</option><option>Exterior</option><option selected>Other</option>
+          </select>
+          <button onclick="addRow('equip')">+ Add Line</button>
+          <button onclick="clearRows('equip')" class="ghost">Clear</button>
+        </div>
+      </div>
+      <table id="equipTable" aria-label="Equipment table">
+        <thead>
+          <tr>
+            <th style="width:48%">Description</th>
+            <th class="num" style="width:12%">Qty (days/units)</th>
+            <th class="num" style="width:15%">Rate</th>
+            <th class="num" style="width:15%">Line Total</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Misc -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Miscellaneous (Fuel / Per Diem / Hotels)</strong>
+        <div class="toolbar">
+          <select id="cat_misc" onchange="calc()">
+            <option>Interior</option><option>Exterior</option><option selected>Other</option>
+          </select>
+          <button onclick="addRow('misc')">+ Add Line</button>
+          <button onclick="clearRows('misc')" class="ghost">Clear</button>
+        </div>
+      </div>
+      <table id="miscTable" aria-label="Misc table">
+        <thead>
+          <tr>
+            <th style="width:38%">Description</th>
+            <th class="num" style="width:12%">Qty</th>
+            <th class="num" style="width:15%">Unit Cost</th>
+            <th class="num" style="width:15%">Line Total</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Subcontractors -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Subcontractors</strong>
+        <div class="toolbar">
+          <select id="cat_subs" onchange="calc()">
+            <option>Interior</option><option>Exterior</option><option selected>Other</option>
+          </select>
+          <button onclick="addRow('subs')">+ Add Line</button>
+          <button onclick="clearRows('subs')" class="ghost">Clear</button>
+        </div>
+      </div>
+      <table id="subsTable" aria-label="Subcontractors table">
+        <thead>
+          <tr>
+            <th style="width:60%">Vendor / Scope</th>
+            <th class="num" style="width:20%">Quote Amount</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="grid cols-2" style="margin-top:12px">
+        <div>
+          <label>Subcontractor Markup %</label>
+          <input id="subsMarkup" type="number" min="0" step="0.01" value="0" oninput="calc()">
+        </div>
+        <div class="print-note">Markup applies to total of subcontractor quotes.</div>
+      </div>
+    </div>
+
+    <!-- Summary & Breakdown -->
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Summary & Breakdown</strong>
+      </div>
+      <div class="grid cols-4">
+        <div class="totals">
+          <div class="line"><div class="muted">Materials Subtotal</div><div id="matSubtotal" class="value">$0.00</div></div>
+          <div class="line"><div>+ Material Markup</div><div id="matMarkupValue" class="value">$0.00</div></div>
+          <div class="line"><div>+ Shipping / Delivery</div><div id="shippingValue" class="value">$0.00</div></div>
+          <div class="line"><div>+ Sales Tax</div><div id="matTaxValue" class="value">$0.00</div></div>
+        </div>
+        <div class="totals">
+          <div class="line"><div class="muted">Labor Subtotal</div><div id="laborSubtotal" class="value">$0.00</div></div>
+          <div class="line"><div>+ Labor Markup</div><div id="laborMarkupValue" class="value">$0.00</div></div>
+          <div class="line"><div class="muted">Equipment Subtotal</div><div id="equipSubtotal" class="value">$0.00</div></div>
+        </div>
+        <div class="totals">
+          <div class="line"><div class="muted">Misc Subtotal</div><div id="miscSubtotal" class="value">$0.00</div></div>
+          <div class="line"><div class="muted">Subcontractor Quotes</div><div id="subsSubtotal" class="value">$0.00</div></div>
+          <div class="line"><div>+ Subcontractor Markup</div><div id="subsMarkupValue" class="value">$0.00</div></div>
+        </div>
+        <div class="totals">
+          <div class="line"><div class="muted">Subtotal (All)</div><div id="subAll" class="value">$0.00</div></div>
+          <div class="line"><div>Total Markup %</div><div><input id="profitPct2" type="number" min="0" step="0.01" oninput="syncProfitPct()" value="42"></div></div>
+          <div class="line"><div>Company O/H Floor %</div><div><input id="companyPct2" type="number" min="0" step="0.01" oninput="syncProfitPct()" value="32"></div></div>
+          <div class="line"><div>+ Total Markup</div><div id="profitValue" class="value">$0.00</div></div>
+          <div class="line"><div class="muted">   ↳ Company O/H (min)</div><div id="companyValue" class="value">$0.00</div></div>
+          <div class="line"><div class="muted">   ↳ Commission (excess)</div><div id="commissionValue" class="value">$0.00</div></div>
+          <div class="line"><div class="grand nowrap">Grand Total</div><div id="grandTotal" class="value grand">$0.00</div></div>
+        </div>
+      </div>
+
+      <div class="grid cols-3" style="margin-top:14px">
+        <div class="totals">
+          <div class="line"><div>Interior Total</div><div id="catInterior" class="value">$0.00</div></div>
+          <div class="line"><div>Exterior Total</div><div id="catExterior" class="value">$0.00</div></div>
+          <div class="line"><div>Other Total</div><div id="catOther" class="value">$0.00</div></div>
+        </div>
+        <div class="totals">
+          <div class="line"><div>Materials % of Subtotal</div><div id="pctMaterials" class="value">0%</div></div>
+          <div class="line"><div>Labor % of Subtotal</div><div id="pctLabor" class="value">0%</div></div>
+          <div class="line"><div>Subs % of Subtotal</div><div id="pctSubs" class="value">0%</div></div>
+        </div>
+        <div class="totals">
+          <div class="line"><div>Equip % of Subtotal</div><div id="pctEquip" class="value">0%</div></div>
+          <div class="line"><div>Misc % of Subtotal</div><div id="pctMisc" class="value">0%</div></div>
+          <div class="line"><div>O/H + Commission</div><div id="pctOH" class="value">0%</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-card">
+      <span class="muted">Autosaved</span><span id="saveStatus" class="muted">· just now</span>
+    </div>
+  </footer>
+
+<script>
+  const $ = sel => document.querySelector(sel);
+  const fmt = n => isFinite(n) ? n.toLocaleString(undefined,{style:'currency',currency:'USD'}) : '$0.00';
+  const pct = n => isFinite(n) ? (n*100).toFixed(1)+'%' : '0%';
+  const clamp = (v,min,max)=> Math.max(min, Math.min(max, v || 0));
+
+  /* Theme */
+  const THEME_KEY = 'swiftcalc_theme';
+  function setTheme(mode){
+    document.documentElement.setAttribute('data-theme', mode);
+    localStorage.setItem(THEME_KEY, mode);
+    const isDark = (mode==='dark');
+    const t = $('#themeToggle');
+    if(t){ t.checked = isDark; t.nextElementSibling.nextElementSibling.textContent = isDark ? 'Dark' : 'Blueprint'; }
+  }
+  function initTheme(){
+    const saved = localStorage.getItem(THEME_KEY);
+    setTheme(saved || 'blueprint');
+    const t = $('#themeToggle');
+    t.addEventListener('change', ()=> setTheme(t.checked ? 'dark' : 'blueprint'));
+  }
+
+  /* Row builders */
+  function addRow(type){
+    const tbody = document.querySelector('#'+type+'Table tbody');
+    const tr = document.createElement('tr');
+    if(type==='materials'){
+      tr.innerHTML = `
+        <td><input type="text" placeholder="e.g., 4x8 MR Board, Primer, etc." oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td><input type="text" placeholder="ea / lf / sf" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num lineTotal">$0.00</td>
+        <td class="num"><button onclick="this.closest('tr').remove(); calc()">✕</button></td>`;
+    } else if(type==='labor'){
+      tr.innerHTML = `
+        <td><input type="text" placeholder="e.g., Painter — touch-up" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num lineTotal">$0.00</td>
+        <td class="num"><button onclick="this.closest('tr').remove(); calc()">✕</button></td>`;
+    } else if(type==='equip'){
+      tr.innerHTML = `
+        <td><input type="text" placeholder="e.g., Scissor lift, compressor, etc." oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num lineTotal">$0.00</td>
+        <td class="num"><button onclick="this.closest('tr').remove(); calc()">✕</button></td>`;
+    } else if(type==='misc'){
+      tr.innerHTML = `
+        <td><input type="text" placeholder="e.g., Fuel, Per Diem, Hotel" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num lineTotal">$0.00</td>
+        <td class="num"><button onclick="this.closest('tr').remove(); calc()">✕</button></td>`;
+    } else if(type==='subs'){
+      tr.innerHTML = `
+        <td><input type="text" placeholder="Vendor / Scope" oninput="calc()"></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="0" oninput="calc()"></td>
+        <td class="num"><button onclick="this.closest('tr').remove(); calc()">✕</button></td>`;
+    }
+    tbody.appendChild(tr);
+    calc();
+  }
+  function clearRows(type){
+    const tbody = document.querySelector('#'+type+'Table tbody');
+    tbody.innerHTML = '';
+    calc();
+  }
+  function extractRows(type){
+    const rows = [];
+    document.querySelectorAll('#'+type+'Table tbody tr').forEach(tr=>{
+      const inputs = tr.querySelectorAll('input');
+      if(type==='materials'){
+        const [desc, qty, unit, unitCost] = inputs;
+        const line = (parseFloat(qty.value)||0) * (parseFloat(unitCost.value)||0);
+        rows.push({desc:desc.value, qty:qty.value, unit:unit.value, unitCost:unitCost.value, line});
+        tr.querySelector('.lineTotal').textContent = fmt(line);
+      } else if(type==='labor'){
+        const [desc, hrs, rate] = inputs;
+        const line = (parseFloat(hrs.value)||0) * (parseFloat(rate.value)||0);
+        rows.push({desc:desc.value, hours:hrs.value, rate:rate.value, line});
+        tr.querySelector('.lineTotal').textContent = fmt(line);
+      } else if(type==='equip'){
+        const [desc, qty, rate] = inputs;
+        const line = (parseFloat(qty.value)||0) * (parseFloat(rate.value)||0);
+        rows.push({desc:desc.value, qty:qty.value, rate:rate.value, line});
+        tr.querySelector('.lineTotal').textContent = fmt(line);
+      } else if(type==='misc'){
+        const [desc, qty, unitCost] = inputs;
+        const line = (parseFloat(qty.value)||0) * (parseFloat(unitCost.value)||0);
+        rows.push({desc:desc.value, qty:qty.value, unitCost:unitCost.value, line});
+        tr.querySelector('.lineTotal').textContent = fmt(line);
+      } else if(type==='subs'){
+        const [desc, quote] = inputs;
+        const line = (parseFloat(quote.value)||0);
+        rows.push({desc:desc.value, quote:quote.value, line});
+      }
+    });
+    return rows;
+  }
+
+  /* Calc */
+  function calc(){
+    const matRows = extractRows('materials');
+    const laborRows = extractRows('labor');
+    const equipRows = extractRows('equip');
+    const miscRows = extractRows('misc');
+    const subsRows = extractRows('subs');
+
+    const matSub = matRows.reduce((s,r)=>s + r.line, 0);
+    const laborSub = laborRows.reduce((s,r)=>s + r.line, 0);
+    const equipSub = equipRows.reduce((s,r)=>s + r.line, 0);
+    const miscSub = miscRows.reduce((s,r)=>s + r.line, 0);
+    const subsSub = subsRows.reduce((s,r)=>s + r.line, 0);
+
+    const matMarkupPct = parseFloat($('#matMarkup').value)||0;
+    const salesTaxPct = parseFloat($('#salesTax').value)||0;
+    const laborMarkupPct = parseFloat($('#laborMarkup').value)||0;
+    const subsMarkupPct = parseFloat($('#subsMarkup').value)||0;
+    const recyclePct = parseFloat($('#recyclePct').value)||0;
+
+    const shippingAmt = parseFloat($('#shippingAmt').value)||0;
+    const shippingTaxable = $('#shippingTaxable').checked;
+
+    const profitPct = parseFloat($('#profitPct').value)||0;
+    const companyPct = parseFloat($('#companyPct').value)||0;
+
+    // Materials math
+    const matMarkupVal = matSub * (matMarkupPct/100);
+    const taxBase = matSub + matMarkupVal + (shippingTaxable ? shippingAmt : 0);
+    const matTaxVal = taxBase * (salesTaxPct/100);
+    const recycleVal = (matSub + matMarkupVal) * (recyclePct/100);
+    const materialsAll = matSub + matMarkupVal + shippingAmt + matTaxVal + recycleVal;
+
+    // Labor math
+    const laborMarkupVal = laborSub * (laborMarkupPct/100);
+    const laborAll = laborSub + laborMarkupVal;
+
+    // Subs math
+    const subsMarkupVal = subsSub * (subsMarkupPct/100);
+    const subsAll = subsSub + subsMarkupVal;
+
+    // Subtotal all before global markup
+    const subAll = materialsAll + laborAll + equipSub + miscSub + subsAll;
+
+    // Global markup split
+    const totalMarkupVal = subAll * (profitPct/100);
+    const companyOHVal = subAll * (Math.min(profitPct, companyPct)/100);
+    const commissionVal = subAll * (Math.max(profitPct - companyPct, 0)/100);
+
+    const grand = subAll + totalMarkupVal;
+
+    // Category totals (based on per-section category selectors)
+    const cat = {
+      Interior: 0, Exterior: 0, Other: 0
+    };
+    const catValue = (id,val)=>{
+      const which = $('#'+id).value || 'Other';
+      if(which in cat) cat[which] += val;
+    };
+    catValue('cat_materials', materialsAll);
+    catValue('cat_labor', laborAll);
+    catValue('cat_equip', equipSub);
+    catValue('cat_misc', miscSub);
+    catValue('cat_subs', subsAll);
+
+    // Composition percentages (of pre-markup subtotal)
+    const base = subAll || 1;
+    const pMaterials = (materialsAll)/base;
+    const pLabor = (laborAll)/base;
+    const pEquip = (equipSub)/base;
+    const pMisc = (miscSub)/base;
+    const pSubs = (subsAll)/base;
+    const pOH = (totalMarkupVal)/grand; // share of final price
+
+    // Render
+    $('#matSubtotal').textContent = fmt(matSub);
+    $('#matMarkupValue').textContent = fmt(matMarkupVal + recycleVal); // show markup+recycle as one line item
+    $('#shippingValue').textContent = fmt(shippingAmt);
+    $('#matTaxValue').textContent = fmt(matTaxVal);
+
+    $('#laborSubtotal').textContent = fmt(laborSub);
+    $('#laborMarkupValue').textContent = fmt(laborMarkupVal);
+
+    $('#equipSubtotal').textContent = fmt(equipSub);
+    $('#miscSubtotal').textContent = fmt(miscSub);
+    $('#subsSubtotal').textContent = fmt(subsSub);
+    $('#subsMarkupValue').textContent = fmt(subsMarkupVal);
+
+    $('#subAll').textContent = fmt(subAll);
+    $('#profitValue').textContent = fmt(totalMarkupVal);
+    $('#companyValue').textContent = fmt(companyOHVal);
+    $('#commissionValue').textContent = fmt(commissionVal);
+    $('#grandTotal').textContent = fmt(grand);
+
+    $('#catInterior').textContent = fmt(cat.Interior);
+    $('#catExterior').textContent = fmt(cat.Exterior);
+    $('#catOther').textContent = fmt(cat.Other);
+
+    $('#pctMaterials').textContent = Math.round(pMaterials*100)+'%';
+    $('#pctLabor').textContent = Math.round(pLabor*100)+'%';
+    $('#pctEquip').textContent = Math.round(pEquip*100)+'%';
+    $('#pctMisc').textContent = Math.round(pMisc*100)+'%';
+    $('#pctSubs').textContent = Math.round(pSubs*100)+'%';
+    $('#pctOH').textContent = Math.round(pOH*100)+'%';
+
+    autosave();
+    updateJobInfoTag();
+  }
+
+  function syncProfitPct(){
+    const p2 = parseFloat($('#profitPct2').value)||0;
+    const c2 = parseFloat($('#companyPct2').value)||0;
+    $('#profitPct').value = p2;
+    $('#companyPct').value = c2;
+    calc();
+  }
+
+  /* Autosave */
+  const STORAGE_KEY = 'swiftcalc_lite_doc_v6';
+  let saveTimer;
+  function autosave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      const data = collectData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      $('#saveStatus').textContent = '· saved';
+    }, 250);
+  }
+  function collectData(){
+    return {
+      job: $('#job').value,
+      client: $('#client').value,
+      date: $('#date').value,
+      address: $('#address').value,
+      wageRate: $('#wageRate').value,
+      recyclePct: $('#recyclePct').value,
+      salesTax: $('#salesTax').value,
+      matMarkup: $('#matMarkup').value,
+      laborMarkup: $('#laborMarkup').value,
+      subsMarkup: $('#subsMarkup').value,
+      shippingAmt: $('#shippingAmt').value,
+      shippingTaxable: $('#shippingTaxable').checked,
+      profitPct: $('#profitPct').value,
+      companyPct: $('#companyPct').value,
+      notes: $('#notes').value,
+      categories: {
+        materials: $('#cat_materials').value,
+        labor: $('#cat_labor').value,
+        equip: $('#cat_equip').value,
+        misc: $('#cat_misc').value,
+        subs: $('#cat_subs').value
+      },
+      materials: extractRows('materials').map(r=>({desc:r.desc, qty:r.qty, unit:r.unit, unitCost:r.unitCost})),
+      labor: extractRows('labor').map(r=>({desc:r.desc, hours:r.hours, rate:r.rate})),
+      equip: extractRows('equip').map(r=>({desc:r.desc, qty:r.qty, rate:r.rate})),
+      misc: extractRows('misc').map(r=>({desc:r.desc, qty:r.qty, unitCost:r.unitCost})),
+      subs: extractRows('subs').map(r=>({desc:r.desc, quote:r.quote}))
+    };
+  }
+  function applyData(d){
+    $('#job').value = d.job||'';
+    $('#client').value = d.client||'';
+    $('#date').value = d.date||'';
+    $('#address').value = d.address||'';
+    $('#wageRate').value = d.wageRate||48;
+    $('#recyclePct').value = d.recyclePct||0;
+    $('#salesTax').value = d.salesTax||0;
+    $('#matMarkup').value = d.matMarkup||0;
+    $('#laborMarkup').value = d.laborMarkup||0;
+    $('#subsMarkup').value = d.subsMarkup||0;
+    $('#shippingAmt').value = d.shippingAmt||0;
+    $('#shippingTaxable').checked = (d.shippingTaxable!==undefined) ? d.shippingTaxable : true;
+    $('#profitPct').value = (d.profitPct!==undefined)?d.profitPct:42;
+    $('#companyPct').value = (d.companyPct!==undefined)?d.companyPct:32;
+    $('#notes').value = d.notes||'';
+
+    if(d.categories){
+      $('#cat_materials').value = d.categories.materials||'Other';
+      $('#cat_labor').value = d.categories.labor||'Other';
+      $('#cat_equip').value = d.categories.equip||'Other';
+      $('#cat_misc').value = d.categories.misc||'Other';
+      $('#cat_subs').value = d.categories.subs||'Other';
+    }
+
+    ['materials','labor','equip','misc','subs'].forEach(clearRows);
+    (d.materials||[]).forEach(r=>{ addRow('materials'); const tr = document.querySelector('#materialsTable tbody tr:last-child'); const [desc, qty, unit, unitCost] = tr.querySelectorAll('input'); desc.value=r.desc||''; qty.value=r.qty||0; unit.value=r.unit||''; unitCost.value=r.unitCost||0; });
+    (d.labor||[]).forEach(r=>{ addRow('labor'); const tr = document.querySelector('#laborTable tbody tr:last-child'); const [desc, hrs, rate] = tr.querySelectorAll('input'); desc.value=r.desc||''; hrs.value=r.hours||0; rate.value=r.rate||0; });
+    (d.equip||[]).forEach(r=>{ addRow('equip'); const tr = document.querySelector('#equipTable tbody tr:last-child'); const [desc, qty, rate] = tr.querySelectorAll('input'); desc.value=r.desc||''; qty.value=r.qty||0; rate.value=r.rate||0; });
+    (d.misc||[]).forEach(r=>{ addRow('misc'); const tr = document.querySelector('#miscTable tbody tr:last-child'); const [desc, qty, unitCost] = tr.querySelectorAll('input'); desc.value=r.desc||''; qty.value=r.qty||0; unitCost.value=r.unitCost||0; });
+    (d.subs||[]).forEach(r=>{ addRow('subs'); const tr = document.querySelector('#subsTable tbody tr:last-child'); const [desc, quote] = tr.querySelectorAll('input'); desc.value=r.desc||''; quote.value=r.quote||0; });
+    calc();
+  }
+
+  function newDoc(){
+    if(confirm('Clear all fields?')){
+      localStorage.removeItem(STORAGE_KEY);
+      $('#job').value=''; $('#client').value=''; $('#date').value=''; $('#address').value='';
+      $('#wageRate').value=48; $('#recyclePct').value=0; $('#salesTax').value=0;
+      $('#matMarkup').value=0; $('#laborMarkup').value=0; $('#subsMarkup').value=0;
+      $('#shippingAmt').value=0; $('#shippingTaxable').checked=true;
+      $('#profitPct').value=42; $('#companyPct').value=32; $('#notes').value='';
+      ['cat_materials','cat_labor','cat_equip','cat_misc','cat_subs'].forEach(id=> $('#'+id).value='Other');
+      ['materials','labor','equip','misc','subs'].forEach(clearRows);
+      addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs');
+      calc();
+    }
+  }
+  function saveJSON(){
+    const data = collectData();
+    const name = ($('#job').value||'SwiftCalc') + '.json';
+    const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=name; a.click();
+    URL.revokeObjectURL(url);
+  }
+  function importJSON(e){
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt)=>{
+      try{ applyData(JSON.parse(evt.target.result)); }
+      catch(err){ alert('Invalid JSON'); }
+    };
+    reader.readAsText(file);
+  }
+
+  // Save-As HTML with embedded state
+  function duplicateDoc(){
+    const data = collectData();
+    const marker = '<!--__STATE_INJECT__-->';
+    let html = document.documentElement.outerHTML;
+    const inject = `<script>window.__INITIAL_STATE__=${JSON.stringify(data)};window.__THEME__='${localStorage.getItem('swiftcalc_theme')||'blueprint'}';<\/script>`;
+    html = html.replace(marker, inject);
+    const nameBase = ($('#job').value||'SwiftCalc_Blueprint').replace(/[^\w\-]+/g,'_');
+    const blob = new Blob([html],{type:'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nameBase + '.html'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* Proposal preview */
+  function openProposal(){
+    calc();
+    const d = collectData();
+    const rowsToHTML = (rows, cols) => {
+      if(!rows || !rows.length) return '<tr><td colspan="'+cols+'" style="color:#666">—</td></tr>';
+      return rows.map(r=>{
+        if('unit' in r) return `<tr><td>${escapeHTML(r.desc||'')}</td><td class="num">${r.qty||0} ${escapeHTML(r.unit||'')}</td><td class="num">${num(r.unitCost)}</td><td class="num">${num((r.qty||0)*(r.unitCost||0))}</td></tr>`;
+        if('hours' in r) return `<tr><td>${escapeHTML(r.desc||'')}</td><td class="num">${r.hours||0}</td><td class="num">${num(r.rate)}</td><td class="num">${num((r.hours||0)*(r.rate||0))}</td></tr>`;
+        if('rate' in r && !('hours' in r)) return `<tr><td>${escapeHTML(r.desc||'')}</td><td class="num">${r.qty||0}</td><td class="num">${num(r.rate)}</td><td class="num">${num((r.qty||0)*(r.rate||0))}</td></tr>`;
+        if('quote' in r) return `<tr><td>${escapeHTML(r.desc||'')}</td><td class="num" colspan="2">Quote</td><td class="num">${num(r.quote)}</td></tr>`;
+        return '';
+      }).join('');
+    };
+    const num = (v)=> (isFinite(parseFloat(v))? parseFloat(v).toLocaleString(undefined,{style:'currency',currency:'USD'}):'$0.00');
+    const escapeHTML = (s)=> (s||'').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Proposal — ${escapeHTML(d.job||'')}</title>
+      <style>
+        body{font:14px/1.5 -apple-system,Segoe UI,Roboto,Arial;margin:24px;color:#111}
+        h1{margin:0 0 4px 0;font-size:22px}
+        .muted{color:#666}
+        .grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+        table{width:100%;border-collapse:collapse;margin:10px 0}
+        th,td{border:1px solid #ddd;padding:8px}
+        th{background:#f7f9ff}
+        td.num, th.num{text-align:right}
+        .right{float:right}
+        .totals{max-width:520px;margin-left:auto;border:1px solid #ddd;padding:12px;border-radius:8px}
+        .line{display:grid;grid-template-columns:1fr 180px;gap:8px;align-items:center}
+        .grand{font-weight:800;font-size:18px}
+        @media print{.noprint{display:none}}
+      </style>
+    <!-- Single-file build: PWA disabled -->
+</head><body>
+      <div class="noprint"><button onclick="window.print()">Print</button></div>
+      <h1>Proposal Summary</h1>
+      <div class="muted">${escapeHTML(d.client||'')} &nbsp;|&nbsp; ${escapeHTML(d.job||'')} &nbsp;|&nbsp; ${escapeHTML(d.date||'')}</div>
+      <div class="muted">${escapeHTML(d.address||'')}</div>
+
+      <h3>Materials</h3>
+      <table><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit Cost</th><th class="num">Line Total</th></tr></thead>
+      <tbody>${rowsToHTML(d.materials,4)}</tbody></table>
+
+      <h3>Labor</h3>
+      <table><thead><tr><th>Description</th><th class="num">Hours</th><th class="num">Rate</th><th class="num">Line Total</th></tr></thead>
+      <tbody>${rowsToHTML(d.labor,4)}</tbody></table>
+
+      <div class="grid">
+        <div>
+          <h3>Equipment</h3>
+          <table><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Line Total</th></tr></thead>
+          <tbody>${rowsToHTML(d.equip,4)}</tbody></table>
+        </div>
+        <div>
+          <h3>Miscellaneous</h3>
+          <table><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit Cost</th><th class="num">Line Total</th></tr></thead>
+          <tbody>${rowsToHTML(d.misc,4)}</tbody></table>
+        </div>
+      </div>
+
+      <h3>Subcontractors</h3>
+      <table><thead><tr><th>Vendor / Scope</th><th class="num" colspan="2">Type</th><th class="num">Amount</th></tr></thead>
+      <tbody>${rowsToHTML(d.subs,3)}</tbody></table>
+
+      <div class="totals">
+        <div class="line"><div>Materials Subtotal</div><div>${$('#matSubtotal').textContent}</div></div>
+        <div class="line"><div>Labor Subtotal</div><div>${$('#laborSubtotal').textContent}</div></div>
+        <div class="line"><div>Equipment Subtotal</div><div>${$('#equipSubtotal').textContent}</div></div>
+        <div class="line"><div>Misc Subtotal</div><div>${$('#miscSubtotal').textContent}</div></div>
+        <div class="line"><div>Subcontractors Subtotal</div><div>${$('#subsSubtotal').textContent}</div></div>
+        <hr>
+        <div class="line"><div><strong>Grand Total</strong></div><div class="grand">${$('#grandTotal').textContent}</div></div>
+        <div class="muted">Notes: ${escapeHTML(d.notes||'')}</div>
+      </div>
+    </body></html>`);
+    win.document.close();
+  }
+
+  /* Proposal export hooks */
+  function exportProposalJSON(){
+    calc();
+    const payload = buildProposalPayload();
+    const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const name = ($('#job').value||'SwiftCalc_Proposal') + '_payload.json';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=name; a.click();
+    URL.revokeObjectURL(url);
+  }
+  async function copyProposalJSON(){
+    calc();
+    const payload = buildProposalPayload();
+    try{
+      await navigator.clipboard.writeText(JSON.stringify(payload,null,2));
+      alert('Proposal JSON copied to clipboard.');
+    }catch(e){
+      alert('Clipboard blocked. Use "Export Proposal JSON".');
+    }
+  }
+  function buildProposalPayload(){
+    const d = collectData();
+    const matSub = parseMoney($('#matSubtotal').textContent);
+    const laborSub = parseMoney($('#laborSubtotal').textContent);
+    const equipSub = parseMoney($('#equipSubtotal').textContent);
+    const miscSub = parseMoney($('#miscSubtotal').textContent);
+    const subsSub = parseMoney($('#subsSubtotal').textContent);
+    const subAll = parseMoney($('#subAll').textContent);
+    const grand = parseMoney($('#grandTotal').textContent);
+    return {
+      meta: {
+        generator: "SwiftCalc v6",
+        timestamp: new Date().toISOString()
+      },
+      job: {
+        name: d.job, client: d.client, date: d.date, address: d.address,
+        notes: d.notes
+      },
+      settings: {
+        wageRate: +d.wageRate||0,
+        taxPct: +d.salesTax||0,
+        recyclePct: +d.recyclePct||0,
+        materialMarkupPct: +d.matMarkup||0,
+        laborMarkupPct: +d.laborMarkup||0,
+        subsMarkupPct: +d.subsMarkup||0,
+        totalMarkupPct: +d.profitPct||0,
+        companyFloorPct: +d.companyPct||0,
+        shipping: { amount: +d.shippingAmt||0, taxable: !!d.shippingTaxable }
+      },
+      categories: d.categories,
+      lines: d,
+      totals: {
+        matSub, laborSub, equipSub, miscSub, subsSub, subAll, grand
+      }
+    };
+  }
+  function parseMoney(txt){
+    const n = parseFloat(String(txt||'').replace(/[^0-9.\-]/g,''));
+    return isFinite(n) ? n : 0;
+  }
+
+  // Job info completeness tag
+  function updateJobInfoTag(){
+    const fields = ['job','client','date'];
+    const ok = fields.every(id=> ( $('#'+id).value || '' ).trim().length>0 );
+    const tag = $('#jobInfoTag');
+    tag.textContent = ok ? 'Ready' : 'Missing info';
+    tag.style.background = ok ? 'rgba(184,255,176,.15)' : 'rgba(255,155,155,.15)';
+  }
+
+  /* PWA install + SW */
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = $('#installBtn');
+    if(btn){ btn.style.display = 'inline-block'; btn.onclick = async ()=>{
+      btn.disabled = true;
+      await deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      btn.style.display = 'none';
+    };}
+  });
+  /* SW removed for single-file mode */);
+  }
+
+  // Init
+  window.addEventListener('load', ()=>{
+    initTheme();
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      try{ applyData(JSON.parse(raw)); }
+      catch{ ['materials','labor','equip','misc','subs'].forEach(clearRows); addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs'); calc(); }
+    } else if(window.__INITIAL_STATE__){
+      applyData(window.__INITIAL_STATE__);
+    } else {
+      addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs'); calc();
+    }
+    if(!$('#date').value){
+      const today = new Date().toISOString().slice(0,10);
+      $('#date').value = today;
+    }
+    if(window.__THEME__){ setTheme(window.__THEME__); }
+    updateJobInfoTag();
+  });
+
+  // Helpers
+  function escapeHTML(s){ return (s||'').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+</script>
+
+<!--__STATE_INJECT__-->
+</body>
+</html>
