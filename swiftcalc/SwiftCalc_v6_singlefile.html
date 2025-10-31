@@ -126,8 +126,7 @@
         <span class="knob" aria-hidden="true"></span>
         <span class="label">Blueprint</span>
       </label>
-      <button onclick="newDoc()" title="Clear all fields">New</button>
-      <button onclick="saveJSON()" title="Download a .json snapshot">Export</button>
+      <button onclick="newDoc()" title="Clear all fields">New</button><button onclick="saveJSON()" title="Download a .json snapshot">Export</button>
       <input id="importFile" type="file" accept="application/json" style="display:none" onchange="importJSON(event)">
       <button onclick="document.getElementById('importFile').click()" title="Load a .json snapshot">Import</button>
       <button onclick="window.print()" class="ghost">Print</button>
@@ -466,121 +465,113 @@
     return rows;
   }
 
-  /* Calc */
+    /* Calc */
   function calc(){
-    const matRows = extractRows('materials');
-    const laborRows = extractRows('labor');
-    const equipRows = extractRows('equip');
+    const matRows  = extractRows('materials');
+    const laborRows= extractRows('labor');
+    const equipRows= extractRows('equip');
     const miscRows = extractRows('misc');
     const subsRows = extractRows('subs');
 
-    const matSub = matRows.reduce((s,r)=>s + r.line, 0);
+    const matSub   = matRows.reduce((s,r)=>s + r.line, 0);
     const laborSub = laborRows.reduce((s,r)=>s + r.line, 0);
     const equipSub = equipRows.reduce((s,r)=>s + r.line, 0);
-    const miscSub = miscRows.reduce((s,r)=>s + r.line, 0);
-    const subsSub = subsRows.reduce((s,r)=>s + r.line, 0);
+    const miscSub  = miscRows.reduce((s,r)=>s + r.line, 0);
+    const subsSub  = subsRows.reduce((s,r)=>s + r.line, 0);
 
-    const matMarkupPct = parseFloat($('#matMarkup').value)||0;
-    const salesTaxPct = parseFloat($('#salesTax').value)||0;
+    const matMarkupPct   = parseFloat($('#matMarkup').value)||0;
+    const salesTaxPct    = parseFloat($('#salesTax').value)||0;
     const laborMarkupPct = parseFloat($('#laborMarkup').value)||0;
-    const subsMarkupPct = parseFloat($('#subsMarkup').value)||0;
-    const recyclePct = parseFloat($('#recyclePct').value)||0;
+    const subsMarkupPct  = parseFloat($('#subsMarkup').value)||0;
+    const recyclePct     = parseFloat($('#recyclePct').value)||0;
 
-    const shippingAmt = parseFloat($('#shippingAmt').value)||0;
+    const shippingAmt     = parseFloat($('#shippingAmt').value)||0;
     const shippingTaxable = $('#shippingTaxable').checked;
 
-    const profitPct = parseFloat($('#profitPct').value)||0;
+    const profitPct  = parseFloat($('#profitPct').value)||0;
     const companyPct = parseFloat($('#companyPct').value)||0;
 
-    // Materials math
-    const matMarkupVal = matSub * (matMarkupPct/100);
-    const taxBase = matSub + matMarkupVal + (shippingTaxable ? shippingAmt : 0);
-    const matTaxVal = taxBase * (salesTaxPct/100);
-    const recycleVal = (matSub + matMarkupVal) * (recyclePct/100);
-    const materialsAll = matSub + matMarkupVal + shippingAmt + matTaxVal + recycleVal;
-
-    // Labor math
+    // Section markups (no compounding later)
+    const matMarkupVal   = matSub   * (matMarkupPct/100);
+    const recycleVal     = (matSub + matMarkupVal) * (recyclePct/100);
     const laborMarkupVal = laborSub * (laborMarkupPct/100);
-    const laborAll = laborSub + laborMarkupVal;
+    const subsMarkupVal  = subsSub  * (subsMarkupPct/100);
 
-    // Subs math
-    const subsMarkupVal = subsSub * (subsMarkupPct/100);
-    const subsAll = subsSub + subsMarkupVal;
+    // Tax ONLY on (materials + mat markup + taxable shipping)
+    const taxBase   = matSub + matMarkupVal + (shippingTaxable ? shippingAmt : 0);
+    const matTaxVal = taxBase * (salesTaxPct/100);
 
-    // Subtotal all before global markup
-    const subAll = materialsAll + laborAll + equipSub + miscSub + subsAll;
+    // Totals per section for display
+    const materialsAll = matSub + matMarkupVal + shippingAmt + matTaxVal + recycleVal;
+    const laborAll     = laborSub + laborMarkupVal;
+    const subsAll      = subsSub  + subsMarkupVal;
 
-    // Global markup split
-    const totalMarkupVal = subAll * (profitPct/100);
-    const companyOHVal = subAll * (Math.min(profitPct, companyPct)/100);
-    const commissionVal = subAll * (Math.max(profitPct - companyPct, 0)/100);
+    // OH&P base is costs only (no tax, no section markups)
+    const baseCost = matSub + laborSub + equipSub + miscSub + subsSub + shippingAmt;
+    const sectAdds = matMarkupVal + laborMarkupVal + subsMarkupVal + recycleVal;
+
+    // Subtotal BEFORE OH&P (but AFTER section markups and tax)
+    const subAll = baseCost + sectAdds + matTaxVal;
+
+    // Global OH&P on base costs only
+    const totalMarkupVal = baseCost * (profitPct/100);
+    const companyOHVal   = baseCost * (Math.min(profitPct, companyPct)/100);
+    const commissionVal  = baseCost * (Math.max(profitPct - companyPct, 0)/100);
 
     const grand = subAll + totalMarkupVal;
 
-    // Category totals (based on per-section category selectors)
-    const cat = {
-      Interior: 0, Exterior: 0, Other: 0
-    };
-    const catValue = (id,val)=>{
-      const which = $('#'+id).value || 'Other';
-      if(which in cat) cat[which] += val;
-    };
+    // Categories
+    const cat = { Interior: 0, Exterior: 0, Other: 0 };
+    const catValue = (id,val)=>{ const which = $('#'+id).value || 'Other'; if(which in cat) cat[which] += val; };
     catValue('cat_materials', materialsAll);
-    catValue('cat_labor', laborAll);
-    catValue('cat_equip', equipSub);
-    catValue('cat_misc', miscSub);
-    catValue('cat_subs', subsAll);
+    catValue('cat_labor',     laborAll);
+    catValue('cat_equip',     equipSub);
+    catValue('cat_misc',      miscSub);
+    catValue('cat_subs',      subsAll);
 
-    // Composition percentages (of pre-markup subtotal)
+    // Composition
     const base = subAll || 1;
     const pMaterials = (materialsAll)/base;
-    const pLabor = (laborAll)/base;
-    const pEquip = (equipSub)/base;
-    const pMisc = (miscSub)/base;
-    const pSubs = (subsAll)/base;
-    const pOH = (totalMarkupVal)/grand; // share of final price
+    const pLabor     = (laborAll)/base;
+    const pEquip     = (equipSub)/base;
+    const pMisc      = (miscSub)/base;
+    const pSubs      = (subsAll)/base;
+    const pOH        = (grand ? (totalMarkupVal/grand) : 0);
 
     // Render
-    $('#matSubtotal').textContent = fmt(matSub);
-    $('#matMarkupValue').textContent = fmt(matMarkupVal + recycleVal); // show markup+recycle as one line item
-    $('#shippingValue').textContent = fmt(shippingAmt);
-    $('#matTaxValue').textContent = fmt(matTaxVal);
+    $('#matSubtotal').textContent     = fmt(matSub);
+    $('#matMarkupValue').textContent  = fmt(matMarkupVal + recycleVal);
+    $('#shippingValue').textContent   = fmt(shippingAmt);
+    $('#matTaxValue').textContent     = fmt(matTaxVal);
 
-    $('#laborSubtotal').textContent = fmt(laborSub);
-    $('#laborMarkupValue').textContent = fmt(laborMarkupVal);
+    $('#laborSubtotal').textContent   = fmt(laborSub);
+    $('#laborMarkupValue').textContent= fmt(laborMarkupVal);
 
-    $('#equipSubtotal').textContent = fmt(equipSub);
-    $('#miscSubtotal').textContent = fmt(miscSub);
-    $('#subsSubtotal').textContent = fmt(subsSub);
+    $('#equipSubtotal').textContent   = fmt(equipSub);
+    $('#miscSubtotal').textContent    = fmt(miscSub);
+
+    $('#subsSubtotal').textContent    = fmt(subsSub);
     $('#subsMarkupValue').textContent = fmt(subsMarkupVal);
 
-    $('#subAll').textContent = fmt(subAll);
-    $('#profitValue').textContent = fmt(totalMarkupVal);
-    $('#companyValue').textContent = fmt(companyOHVal);
+    $('#subAll').textContent          = fmt(subAll);
+    $('#profitValue').textContent     = fmt(totalMarkupVal);
+    $('#companyValue').textContent    = fmt(companyOHVal);
     $('#commissionValue').textContent = fmt(commissionVal);
-    $('#grandTotal').textContent = fmt(grand);
+    $('#grandTotal').textContent      = fmt(grand);
 
-    $('#catInterior').textContent = fmt(cat.Interior);
-    $('#catExterior').textContent = fmt(cat.Exterior);
-    $('#catOther').textContent = fmt(cat.Other);
+    $('#catInterior').textContent     = fmt(cat.Interior);
+    $('#catExterior').textContent     = fmt(cat.Exterior);
+    $('#catOther').textContent        = fmt(cat.Other);
 
-    $('#pctMaterials').textContent = Math.round(pMaterials*100)+'%';
-    $('#pctLabor').textContent = Math.round(pLabor*100)+'%';
-    $('#pctEquip').textContent = Math.round(pEquip*100)+'%';
-    $('#pctMisc').textContent = Math.round(pMisc*100)+'%';
-    $('#pctSubs').textContent = Math.round(pSubs*100)+'%';
-    $('#pctOH').textContent = Math.round(pOH*100)+'%';
+    $('#pctMaterials').textContent    = Math.round(pMaterials*100)+'%';
+    $('#pctLabor').textContent        = Math.round(pLabor*100)+'%';
+    $('#pctEquip').textContent        = Math.round(pEquip*100)+'%';
+    $('#pctMisc').textContent         = Math.round(pMisc*100)+'%';
+    $('#pctSubs').textContent         = Math.round(pSubs*100)+'%';
+    $('#pctOH').textContent           = Math.round(pOH*100)+'%';
 
     autosave();
     updateJobInfoTag();
-  }
-
-  function syncProfitPct(){
-    const p2 = parseFloat($('#profitPct2').value)||0;
-    const c2 = parseFloat($('#companyPct2').value)||0;
-    $('#profitPct').value = p2;
-    $('#companyPct').value = c2;
-    calc();
   }
 
   /* Autosave */
@@ -672,7 +663,22 @@
       addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs');
       calc();
     }
-  }
+  
+function clearOldData({wipeStorage=true}={}){
+  try{ if(wipeStorage) localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  $('#job').value=''; $('#client').value=''; $('#date').value=''; $('#address').value='';
+  $('#notes').value='';
+  $('#wageRate').value=48; $('#recyclePct').value=0; $('#salesTax').value=0;
+  $('#matMarkup').value=0; $('#laborMarkup').value=0; $('#subsMarkup').value=0;
+  $('#shippingAmt').value=0; $('#shippingTaxable').checked=true;
+  $('#profitPct').value=42; $('#companyPct').value=32;
+  ['cat_materials','cat_labor','cat_equip','cat_misc','cat_subs'].forEach(id=> $('#'+id).value='Other');
+  ['materials','labor','equip','misc','subs'].forEach(clearRows);
+  addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs');
+  if(!$('#date').value){ $('#date').value = new Date().toISOString().slice(0,10); }
+  calc(); updateJobInfoTag();
+}
+}
   function saveJSON(){
     const data = collectData();
     const name = ($('#job').value||'SwiftCalc') + '.json';
@@ -876,26 +882,24 @@
 
   // Init
   window.addEventListener('load', ()=>{
-    initTheme();
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      try{ applyData(JSON.parse(raw)); }
-      catch{ ['materials','labor','equip','misc','subs'].forEach(clearRows); addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs'); calc(); }
-    } else if(window.__INITIAL_STATE__){
-      applyData(window.__INITIAL_STATE__);
-    } else {
-      addRow('materials'); addRow('labor'); addRow('equip'); addRow('misc'); addRow('subs'); calc();
-    }
-    if(!$('#date').value){
-      const today = new Date().toISOString().slice(0,10);
-      $('#date').value = today;
-    }
-    if(window.__THEME__){ setTheme(window.__THEME__); }
-    updateJobInfoTag();
-  });
+  initTheme();
+  try{ clearOldData({wipeStorage:false}); }catch(e){}
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){ try{ applyData(JSON.parse(raw)); } catch(e){} }
+  else if(window.__INITIAL_STATE__){ try{ applyData(window.__INITIAL_STATE__); }catch(e){} }
+  if(window.__THEME__){ setTheme(window.__THEME__); }
+  updateJobInfoTag();
+});
 
   // Helpers
-  function escapeHTML(s){ return (s||'').toString().replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function escapeHTML(s){
+  return (s||'').toString().replace(/[&<>"']/g, function(m){
+    var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+    return map[m];
+  });
+}
+
+
 </script>
 
 <!--__STATE_INJECT__-->
